@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Form</title>
+</head>
+<body>
+    <h1>Booking Form</h1>
+    <label for="user_id">User ID:</label>
+    <input type="text" id="user_id"><br><br>
+
+    <label for="seat_id">Seat ID:</label>
+    <input type="text" id="seat_id">
+    
+    <label for="showtime_id">Showtime ID:</label>
+    <input type="text" id="showtime_id">
+    
+    <button onclick="addSeatAndShowtime()">Add</button>
+    
+    <ul id="seatAndShowtimeList"></ul>
+    <button onclick="submitForm()">Submit</button>
+    <br>
+    <br>
+    <a id="request"></a>
+    <h5 id="function-list"></h5>
+
+    <script>
+        var seatAndShowtimeArray = [];
+        var func = ['Kiểm tra ghế ', 'Lấy thông tin người dùng ', 'Khởi tạo hóa đơn ', 'Tạo vé ', 'Kiểm tra thanh toán ', 'Cập nhật lại số tiền ', 'Cập nhật trạng thái hóa đơn ', 'Gửi email '];
+        let interval;
+        const functionList = document.getElementById("function-list");
+
+        function addSeatAndShowtime() {
+            var seat_id = document.getElementById("seat_id").value;
+            var showtime_id = document.getElementById("showtime_id").value;
+            
+            seatAndShowtimeArray.push({ seat_id: parseInt(seat_id), showtime_id: parseInt(showtime_id) });
+
+            document.getElementById("seat_id").value = "";
+            document.getElementById("showtime_id").value = "";
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            var listElement = document.getElementById("seatAndShowtimeList");
+            listElement.innerHTML = "";
+
+            seatAndShowtimeArray.forEach(function(item) {
+                var listItem = document.createElement("li");
+                listItem.textContent = "Seat ID: " + item.seat_id + ", Showtime ID: " + item.showtime_id;
+                listElement.appendChild(listItem);
+            });
+        }
+
+        function callAPIAndUpdateState(index, timestamp) {
+            fetch('http://localhost:8080/start?request_id=' + timestamp)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    const status = data[index]; // Giả sử trạng thái được trả về từ API
+                    console.log(status);
+                    const functionElement = document.createElement('div');
+                    functionElement.className = 'function';
+                    const cn = func[index]
+                    console.log(cn);
+                    if(index == 5 && data[index-1] == -1){
+                        if (status == 1) {
+                            functionElement.classList.add('success');
+                            functionElement.textContent += `Xóa vé - Thành công`;
+                        } else if (status == -1) {
+                            functionElement.classList.add('failure');
+                            functionElement.textContent += `${cn} - Thất bại`;
+                        }
+                    }
+                    else {
+                        if (status == 1) {
+                            functionElement.classList.add('success');
+                            functionElement.textContent += `${cn} - Thành công`;
+                        } else if (status == -1) {
+                            functionElement.classList.add('failure');
+                            functionElement.textContent += `${cn} - Thất bại`;
+                        } else if (status == 0) {
+                            functionElement.classList.add('success');
+                            functionElement.textContent += `${cn} - Thành công`;
+                        }
+                    }
+ 
+                    functionList.appendChild(functionElement);
+                    if (index >= 7 && status != 0) {
+                        clearInterval(interval);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function submitForm() { 
+            const request = document.getElementById("request");
+            request.textContent = JSON.stringify(seatAndShowtimeArray);
+            var user_id = document.getElementById("user_id").value;
+            functionList.innerHTML = '';
+            const currentDate = new Date();
+            const timestamp = currentDate.getTime();
+            console.log(timestamp);
+            startRequest(user_id, timestamp);
+            let i = 0;
+            interval = setInterval(function() {
+                callAPIAndUpdateState(i, timestamp);
+                i++;
+            }, 500);
+            var seatAndShowtimeArray = [];
+            updateDisplay();
+
+        }
+
+
+        function startRequest(user_id, timestamp) {
+            const requestOptions = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(seatAndShowtimeArray)
+            };
+            fetch('http://localhost:8080/start?request_id=' + timestamp +  '&user_id=' + user_id, requestOptions);
+        }
+
+    </script>
+</body>
+</html>

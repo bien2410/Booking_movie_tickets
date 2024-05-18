@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  version: '1.0'
+  title: Cinema API
+  description: Thông tin chi tiết về các Rest API phục vụ cho demo module Thanh toán đặt vé xem phim online của môn phát triển phần mềm hướng dịch vụ.
+tags:
+  - name: notification
+
+paths:
+  # ------- notification utility service -------------------------------------------------------
+  /notification:
+    post:
+      tags:
+        - notification
+      description: Send bill to user
+      operationId: sendEmail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Email'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          description: Cannot send mail
+components:
+  # ----- Schema definitions  ----------------------------------------
+  schemas:
+    Email:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        subject:
+          type: string
+        content:
+          type: string

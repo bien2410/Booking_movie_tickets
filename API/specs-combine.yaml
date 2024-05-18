@@ -1,0 +1,361 @@
+openapi: 3.0.0
+info:
+  version: '1.0'
+  title: Cinema API
+  description: Thông tin chi tiết về các Rest API phục vụ cho demo module Thanh toán đặt vé xem phim online của môn phát triển phần mềm hướng dịch vụ.
+tags:
+  - name: start
+  - name: ticket
+  - name: user
+  - name: invoice
+  - name: notification
+
+paths:
+  # -------- Task serivce endpoint ------------------------------
+  /start:
+    post:
+      tags:
+        - start
+      description: Bắt đầu task đặt vé
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: request_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  showtime_id:
+                    type: integer
+                    format: int32
+                  seat_id:
+                    type: integer
+                    format: int32
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Operation failed
+
+    get:
+      tags:
+        - start
+      description: Bắt đầu task đặt vé
+      parameters:
+        - name: request_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                example: [1,1,1,-1,-1,-1]
+  # ------- Ticket micro-service -------------------------------------------------------
+  /ticket/check:
+    post:
+      tags:
+        - ticket
+      description: |
+        Kiểm tra các ghế trong request body với mỗi (id ghế + suất chiếu cụ thể), đã có vé nào chứa thông tin này chưa.<br><br>
+        Nếu ít nhất một vé đã chứa thông tin các ghế trong request body, trả về thất bại.Ngược lại trả về thành công.
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  seat_id:
+                    type: integer
+                    format: int32
+                  showtime_id:
+                    type: integer
+                    format: int32
+
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          description: Operation failed
+          content:
+            application/json:
+              schema:
+                type: boolean
+                example: false
+
+  /ticket/create:
+    post:
+      tags:
+        - ticket
+      description: Tạo các vé mới trong CSDL
+      parameters:
+        - name: invoice_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  seat_id:
+                    type: integer
+                    format: int32
+                  showtime_id:
+                    type: integer
+                    format: int32
+
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Operation failed
+
+  /ticket:
+    delete:
+      tags:
+        - ticket
+      description: Xoá vé trong CSDL dựa trên hoá đơn
+      parameters:
+        - name: invoice_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          description: Operation failed
+
+  # ------- user service -------------------------------------------------------
+  /user:
+    get:
+      tags:
+        - user
+      description: Lấy thông tin chi tiết của người dùng
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Invalid ID supplied
+    put:
+      tags:
+        - user
+      description: Cập nhật thông tin người dùng
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '404':
+          description: User ID not found
+
+  # ------- Invoice service -------------------------------------------------------
+  /invoice:
+    post:
+      tags:
+        - invoice
+      description: Tạo một hoá đơn mới trong CSDL với trạng thái là đang chờ (0)
+      operationId: createInvoice
+      parameters:
+      - in: query
+        name: user_id
+        schema:
+          type: integer
+          format: int32
+        required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+    put:
+      tags:
+        - invoice
+      description: Cập nhật trạng thái hoá đơn
+      operationId: setStatus
+      parameters:
+        - in: query
+          name: invoice_id
+          schema:
+            type: integer
+          required: true
+        - in: query
+          name: status
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+
+  # ------- notification utility service -------------------------------------------------------
+
+  /notification:
+    post:
+      tags:
+        - notification
+      description: Send bill to user
+      operationId: sendEmail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Email'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '400':
+          description: Cannot send mail
+
+# ----- Schema definitions  ----------------------------------------
+components:
+  schemas:
+
+    Seat:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        seat_id:
+          type: integer
+          format: int32
+        seat_row:
+          type: integer
+          format: int32
+        seat_column:
+          type: integer
+          format: int32
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        invoice_id:
+          type: integer
+          format: int32
+        showtime_id:
+          type: integer
+          format: int32
+        seat_id:
+          type: integer
+          format: int32
+        price:
+          type: number
+          format: float
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        user_id:
+          type: integer
+          format: int32
+        status:
+          type: integer
+          format: int32
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+        amount:
+          type: integer
+          format: float
+      required:
+        - id
+
+    Email:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        subject:
+          type: string
+        content:
+          type: string

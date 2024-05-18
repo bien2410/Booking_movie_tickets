@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  version: '1.0'
+  title: Cinema API
+  description: Thông tin chi tiết về các Rest API phục vụ cho demo module Thanh toán đặt vé xem phim online của môn phát triển phần mềm hướng dịch vụ.
+tags:
+  - name: invoice
+
+paths:
+  # ------- Invoice service -------------------------------------------------------
+  /invoice:
+    post:
+      tags:
+        - invoice
+      description: Tạo một hoá đơn mới trong CSDL với trạng thái là đang chờ (0)
+      operationId: createInvoice
+      parameters:
+      - in: query
+        name: user_id
+        schema:
+          type: integer
+          format: int32
+        required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+    put:
+      tags:
+        - invoice
+      description: Cập nhật trạng thái hoá đơn
+      operationId: setStatus
+      parameters:
+        - in: query
+          name: invoice_id
+          schema:
+            type: integer
+          required: true
+        - in: query
+          name: status
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+components:
+  # ----- Schema definitions  ----------------------------------------
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        user_id:
+          type: integer
+          format: int32
+        status:
+          type: integer
+          format: int32
